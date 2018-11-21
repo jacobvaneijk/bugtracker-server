@@ -10,6 +10,10 @@ import (
     "github.com/joho/godotenv"
 )
 
+func StatusHandler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "API is up and running!");
+}
+
 func CreateBugHandler(w http.ResponseWriter, r *http.Request) {
     req, err := http.NewRequest(
         "POST",
@@ -55,6 +59,7 @@ func main() {
 
     r := mux.NewRouter()
 
+    r.HandleFunc("/status", StatusHandler)
     r.HandleFunc("/bug", CreateBugHandler).Methods("POST")
 
     http.Handle("/", r)
