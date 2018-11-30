@@ -1,60 +1,54 @@
 package main
 
 import (
-    "net/http"
     "os"
-    "log"
     "fmt"
+    "log"
+    "net/http"
+    "encoding/base64"
 
     "github.com/gorilla/mux"
     "github.com/joho/godotenv"
+    "github.com/jacobvaneijk/bugtracker-server/trello"
 )
 
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "API is up and running!");
+    fmt.Fprintf(w, "API is up and running!")
 }
 
 func CreateBugHandler(w http.ResponseWriter, r *http.Request) {
-    req, err := http.NewRequest(
-        "POST",
+    client := trello.NewClient(
         os.Getenv("TRELLO_API_URL"),
-        nil,
+        os.Getenv("TRELLO_API_KEY"),
+        os.Getenv("TRELLO_API_TOKEN"),
     )
 
-    if err != nil {
-        fmt.Printf("http.NewRequest() error: %v\n", err)
-        return
+    card := trello.Card{
+        Name: r.FormValue("title"),
+        Desc: r.FormValue("description"),
+        IDList: r.FormValue("list"),
     }
 
-    q := req.URL.Query()
-
-    q.Add("key", os.Getenv("TRELLO_API_KEY"))
-    q.Add("token", os.Getenv("TRELLO_API_TOKEN"))
-    q.Add("name", r.FormValue("title"))
-    q.Add("desc", r.FormValue("description"))
-    q.Add("idList", r.FormValue("list"))
-
-    req.URL.RawQuery = q.Encode()
-    req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-    c := &http.Client{}
-    resp, err := c.Do(req)
-
+    err := client.CreateCard(&card)
     if err != nil {
-        fmt.Printf("http.Do() error: %v\n", err)
-        return
+        panic(err)
     }
 
-    defer resp.Body.Close()
+    image, err := base64.StdEncoding.DecodeString(r.FormValue("screenshot"))
+    if err != nil {
+        panic(err)
+    }
 
-    fmt.Fprintf(w, "Created new card!");
+    err = card.AddAttachment(image)
+    if err != nil {
+        panic(err)
+    }
 }
 
 func main() {
     err := godotenv.Load()
-
     if err != nil {
-        log.Fatal("Couldn't read `.env` file.")
+        panic(err)
     }
 
     r := mux.NewRouter()
