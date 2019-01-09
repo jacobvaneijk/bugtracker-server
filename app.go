@@ -26,7 +26,7 @@ type BugReport struct {
     ProjectID int `json:"project_id"`
     Title string `json:"title"`
     Description string `json:"description"`
-    TrelloUrl string `json:"trello_url"`
+    TrelloID string `json:"trello_id"`
     CurrentList string `json:"current_list"`
     SelectionWidth int `json:"selection_width"`
     SelectionHeight int `json:"selection_height"`
@@ -178,6 +178,8 @@ func (a *App) createBugHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         panic(err)
     }
+
+    bugReport.TrelloID = card.ID;
 
     image, err := base64.StdEncoding.DecodeString(r.FormValue("screenshot"))
     if err != nil {
