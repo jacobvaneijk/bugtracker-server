@@ -26,7 +26,7 @@ type BugReport struct {
     ProjectID int `json:"project_id"`
     Title string `json:"title"`
     Description string `json:"description"`
-    TrelloID string `json:"trello_id"`
+    TrelloID string `json:"id"`
     CurrentList string `json:"current_list"`
     SelectionWidth int `json:"selection_width"`
     SelectionHeight int `json:"selection_height"`
