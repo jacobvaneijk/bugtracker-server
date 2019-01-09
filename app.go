@@ -37,10 +37,10 @@ type BugReport struct {
 }
 
 type Project struct {
-    ID int
-    Name string
-    UnresolvedList string
-    SiteUrl string
+    ID int `json:"-"`
+    Name string `json:"name"`
+    UnresolvedList string `json:"unresolved_list"`
+    SiteUrl string `site_url:"site_url"`
 }
 
 func NewApp() *App {
@@ -195,6 +195,13 @@ func (a *App) createBugHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         panic(err)
     }
+
+    w.Header().Set("Content-Type", "application/json")
+
+    err = json.NewEncoder(w).Encode(bugReport)
+    if err != nil {
+        panic(err)
+    }
 }
 
 func (a *App) createProjectHandler(w http.ResponseWriter, r *http.Request) {
@@ -205,6 +212,13 @@ func (a *App) createProjectHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     err := a.DbMap.Insert(&project)
+    if err != nil {
+        panic(err)
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+
+    err = json.NewEncoder(w).Encode(project)
     if err != nil {
         panic(err)
     }
