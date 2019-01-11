@@ -6,6 +6,7 @@ import (
     "log"
     "strconv"
     "net/http"
+    "io/ioutil"
     "database/sql"
     "encoding/json"
     "encoding/base64"
@@ -70,6 +71,7 @@ func NewApp() *App {
     a.Router.HandleFunc("/bugs", a.getBugsHandler).Methods("GET")
     a.Router.HandleFunc("/bugs", a.createBugHandler).Methods("POST")
     a.Router.HandleFunc("/projects", a.createProjectHandler).Methods("POST")
+    a.Router.HandleFunc("/trello", a.handleTrelloCallback).Methods("POST")
 
     return &a
 }
@@ -96,17 +98,33 @@ func (a *App) statusHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "API is up and running!")
 }
 
+
 func (a *App) getBugsHandler(w http.ResponseWriter, r *http.Request) {
     bugs := []BugReport{}
 
-    err := a.DbMap.Select(&bugs, "SELECT * FROM bug_reports")
-    if err != nil {
-        panic(err)
+    // @TODO: there may be a nicer way to implement the filter.
+
+    project, exists := r.URL.Query()["project"]
+    fmt.Printf("%v", project)
+    if exists {
+        bindVar := a.DbMap.Dialect.BindVar(0)
+
+        err := a.DbMap.Select(&bugs, "SELECT * FROM bug_reports WHERE ProjectID = "+bindVar, project)
+        if err != nil {
+            panic(err)
+        }
+    } else {
+        err := a.DbMap.Select(&bugs, "SELECT * FROM bug_reports")
+        if err != nil {
+            panic(err)
+        }
     }
+
+
 
     w.Header().Set("Content-Type", "application/json")
 
-    err = json.NewEncoder(w).Encode(bugs)
+    err := json.NewEncoder(w).Encode(bugs)
     if err != nil {
         panic(err)
     }
@@ -222,4 +240,20 @@ func (a *App) createProjectHandler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         panic(err)
     }
+}
+
+func (a *App) handleTrelloCallback(w http.ResponseWriter, r *http.Request) {
+    j := make(map[string]interface{})
+
+    b, err := ioutil.ReadAll(r.Body)
+    if err != nil {
+        panic(err)
+    }
+
+    err = json.Unmarshal(b, &j)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println("%v", j)
 }
