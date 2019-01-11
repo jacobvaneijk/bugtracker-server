@@ -27,6 +27,8 @@ type BugReport struct {
     ProjectID int `json:"project_id"`
     Title string `json:"title"`
     Description string `json:"description"`
+    Status string `json:"status"`
+    Path string `json:"path"`
     TrelloID string `json:"id"`
     CurrentList string `json:"current_list"`
     SelectionWidth int `json:"selection_width"`
@@ -72,6 +74,9 @@ func NewApp() *App {
     a.Router.HandleFunc("/bugs", a.createBugHandler).Methods("POST")
     a.Router.HandleFunc("/projects", a.createProjectHandler).Methods("POST")
     a.Router.HandleFunc("/trello", a.handleTrelloCallback).Methods("POST")
+    a.Router.HandleFunc("/trello", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+    }).Methods("HEAD")
 
     return &a
 }
@@ -102,25 +107,25 @@ func (a *App) statusHandler(w http.ResponseWriter, r *http.Request) {
 func (a *App) getBugsHandler(w http.ResponseWriter, r *http.Request) {
     bugs := []BugReport{}
 
-    // @TODO: there may be a nicer way to implement the filter.
+    project := r.URL.Query().Get("project")
+    path := r.URL.Query().Get("path")
 
-    project, exists := r.URL.Query()["project"]
-    fmt.Printf("%v", project)
-    if exists {
-        bindVar := a.DbMap.Dialect.BindVar(0)
+    if project != "" && path != "" {
+        q := "SELECT * FROM bug_reports WHERE Status != 'Solved' AND ProjectID = ? AND Path = ?"
+        //q = modl.ReBind(q, a.DbMap.Dialect)
 
-        err := a.DbMap.Select(&bugs, "SELECT * FROM bug_reports WHERE ProjectID = "+bindVar, project)
+	/*
+        project, err := strconv.Atoi(project)
         if err != nil {
             panic(err)
         }
-    } else {
-        err := a.DbMap.Select(&bugs, "SELECT * FROM bug_reports")
+	*/
+
+        err := a.DbMap.Select(&bugs, q, project, path)
         if err != nil {
             panic(err)
         }
     }
-
-
 
     w.Header().Set("Content-Type", "application/json")
 
@@ -177,7 +182,8 @@ func (a *App) createBugHandler(w http.ResponseWriter, r *http.Request) {
     bugReport := BugReport{
         ProjectID: project.ID,
         Title: r.FormValue("title"),
-        Description: r.FormValue("description"),
+	    Path: r.FormValue("path"),
+	    Description: r.FormValue("description"),
         SelectionWidth: selectionWidth,
         SelectionHeight: selectionHeight,
         PageWidth: pageWidth,
@@ -243,17 +249,58 @@ func (a *App) createProjectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleTrelloCallback(w http.ResponseWriter, r *http.Request) {
-    j := make(map[string]interface{})
+    //j := make(map[string]interface{})
+    var j interface{}
 
     b, err := ioutil.ReadAll(r.Body)
     if err != nil {
         panic(err)
     }
 
-    err = json.Unmarshal(b, &j)
-    if err != nil {
-        panic(err)
+    if len(b) > 0 {
+        err = json.Unmarshal(b, &j)
+        if err != nil {
+	    panic(err)
+        }
+
+	d := j.(map[string]interface{})
+
+	model := d["action"].(map[string]interface{})
+        if model == nil {
+	    return
+        }
+
+	display := model["display"].(map[string]interface{})
+        if display == nil {
+	    return
+        }
+
+	entities := display["entities"].(map[string]interface{})
+        if entities == nil {
+	    return
+        }
+
+        card := entities["card"].(map[string]interface{})
+        if card == nil {
+	    return
+        }
+
+	listAfter := entities["listAfter"].(map[string]interface{})
+        if listAfter == nil {
+	    return
+        }
+
+	fmt.Println("Moved card to %s", listAfter["text"])
+
+	q := "UPDATE bug_reports SET Status = ? WHERE TrelloID = ?"
+	q = modl.ReBind(q, a.DbMap.Dialect)
+
+        _, err := a.DbMap.Db.Exec(q, listAfter["text"], card["id"])
+        if err != nil {
+            panic(err)
+        }
+    } else {
     }
 
-    fmt.Println("%v", j)
+    w.WriteHeader(http.StatusOK)
 }
