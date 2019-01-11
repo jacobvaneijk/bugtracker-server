@@ -103,7 +103,6 @@ func (a *App) statusHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "API is up and running!")
 }
 
-
 func (a *App) getBugsHandler(w http.ResponseWriter, r *http.Request) {
     bugs := []BugReport{}
 
@@ -112,14 +111,6 @@ func (a *App) getBugsHandler(w http.ResponseWriter, r *http.Request) {
 
     if project != "" && path != "" {
         q := "SELECT * FROM bug_reports WHERE Status != 'Solved' AND ProjectID = ? AND Path = ?"
-        //q = modl.ReBind(q, a.DbMap.Dialect)
-
-	/*
-        project, err := strconv.Atoi(project)
-        if err != nil {
-            panic(err)
-        }
-	*/
 
         err := a.DbMap.Select(&bugs, q, project, path)
         if err != nil {
@@ -182,8 +173,8 @@ func (a *App) createBugHandler(w http.ResponseWriter, r *http.Request) {
     bugReport := BugReport{
         ProjectID: project.ID,
         Title: r.FormValue("title"),
-	    Path: r.FormValue("path"),
-	    Description: r.FormValue("description"),
+        Path: r.FormValue("path"),
+        Description: r.FormValue("description"),
         SelectionWidth: selectionWidth,
         SelectionHeight: selectionHeight,
         PageWidth: pageWidth,
@@ -249,7 +240,6 @@ func (a *App) createProjectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleTrelloCallback(w http.ResponseWriter, r *http.Request) {
-    //j := make(map[string]interface{})
     var j interface{}
 
     b, err := ioutil.ReadAll(r.Body)
@@ -257,49 +247,50 @@ func (a *App) handleTrelloCallback(w http.ResponseWriter, r *http.Request) {
         panic(err)
     }
 
-    if len(b) > 0 {
-        err = json.Unmarshal(b, &j)
-        if err != nil {
-	    panic(err)
-        }
+    if len(b) < 0 {
+        return
+    }
 
-	d := j.(map[string]interface{})
+    err = json.Unmarshal(b, &j)
+    if err != nil {
+        panic(err)
+    }
 
-	model := d["action"].(map[string]interface{})
-        if model == nil {
-	    return
-        }
+    // @TODO: It must be possible to do this better.
 
-	display := model["display"].(map[string]interface{})
-        if display == nil {
-	    return
-        }
+    d := j.(map[string]interface{})
 
-	entities := display["entities"].(map[string]interface{})
-        if entities == nil {
-	    return
-        }
+    model := d["action"].(map[string]interface{})
+    if model == nil {
+        return
+    }
 
-        card := entities["card"].(map[string]interface{})
-        if card == nil {
-	    return
-        }
+    display := model["display"].(map[string]interface{})
+    if display == nil {
+        return
+    }
 
-	listAfter := entities["listAfter"].(map[string]interface{})
-        if listAfter == nil {
-	    return
-        }
+    entities := display["entities"].(map[string]interface{})
+    if entities == nil {
+        return
+    }
 
-	fmt.Println("Moved card to %s", listAfter["text"])
+    card := entities["card"].(map[string]interface{})
+    if card == nil {
+        return
+    }
 
-	q := "UPDATE bug_reports SET Status = ? WHERE TrelloID = ?"
-	q = modl.ReBind(q, a.DbMap.Dialect)
+    listAfter := entities["listAfter"].(map[string]interface{})
+    if listAfter == nil {
+        return
+    }
 
-        _, err := a.DbMap.Db.Exec(q, listAfter["text"], card["id"])
-        if err != nil {
-            panic(err)
-        }
-    } else {
+    q := "UPDATE bug_reports SET Status = ? WHERE TrelloID = ?"
+    q = modl.ReBind(q, a.DbMap.Dialect)
+
+    _, err = a.DbMap.Db.Exec(q, listAfter["text"], card["id"])
+    if err != nil {
+        panic(err)
     }
 
     w.WriteHeader(http.StatusOK)
