@@ -1,4 +1,4 @@
-package trello
+package main
 
 import (
     "fmt"

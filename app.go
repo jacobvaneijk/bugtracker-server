@@ -14,7 +14,6 @@ import (
     "github.com/gorilla/mux"
     "github.com/jmoiron/modl"
     _ "github.com/mattn/go-sqlite3"
-    "github.com/jacobvaneijk/bugtracker-server/trello"
 )
 
 type App struct {
@@ -127,7 +126,7 @@ func (a *App) getBugsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) createBugHandler(w http.ResponseWriter, r *http.Request) {
-    client := trello.NewClient(
+    client := NewClient(
         os.Getenv("TRELLO_API_URL"),
         os.Getenv("TRELLO_API_KEY"),
         os.Getenv("TRELLO_API_TOKEN"),
@@ -183,7 +182,7 @@ func (a *App) createBugHandler(w http.ResponseWriter, r *http.Request) {
         DotY: dotY,
     }
 
-    card := trello.Card{
+    card := Card{
         Name: bugReport.Title,
         Desc: bugReport.Description,
         IDList: project.UnresolvedList,
