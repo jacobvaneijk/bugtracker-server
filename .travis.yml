@@ -13,5 +13,4 @@ install:
   - dep ensure
 
 # Run the actual tests.
-script:
-  - make test
+script: make test
