@@ -1,0 +1,13 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: {repository: golang}
+
+inputs:
+- name: bugtracker-server
+
+run:
+  path: make
+  args: [test]

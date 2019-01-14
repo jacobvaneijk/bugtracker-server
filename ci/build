@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Install Dep
+curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
+# Install dependencies using Dep
+dep ensure
+
+# Build the program
+make build

@@ -1,0 +1,24 @@
+---
+resources:
+- name: bugtracker-server
+  type: git
+  source:
+    uri: https://github.com/jacobvaneijk/bugtracker-server
+    branch: master
+
+jobs:
+- name: unit
+  public: true
+  plan:
+    - get: bugtracker-server
+      trigger: true
+    - task: unit
+      file: bugtracker/ci/test.yml
+
+- name: build
+  public: true
+  plan:
+    - get: bugtracker-server
+      trigger: true
+    - task: build
+      file: bugtracker/ci/build.yml
