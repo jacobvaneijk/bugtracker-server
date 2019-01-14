@@ -9,7 +9,7 @@ notifications:
 
 # Make sure to install the dependencies.
 install:
-  - go get -u github.com/golang/dep/...
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
   - dep ensure
 
 # Run the actual tests.
