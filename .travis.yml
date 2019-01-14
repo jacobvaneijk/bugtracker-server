@@ -1,0 +1,17 @@
+# Go!
+language: go
+go:
+  - 1.11.3"
+
+# Disable annoying emails.
+notifications:
+  email: false
+
+# Make sure to install the dependencies.
+install:
+  - go get -u github.com/golang/dep/...
+  - dep ensure
+
+# Run the actual tests.
+script:
+  - make test
