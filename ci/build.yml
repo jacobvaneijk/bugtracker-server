@@ -12,5 +12,5 @@ outputs:
 - name: bin
 
 run:
-  path: ci/build]
+  path: ci/build
   dir: ./bugtracker-server
