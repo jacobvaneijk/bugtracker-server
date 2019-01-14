@@ -9,7 +9,7 @@ import (
 
 
 func TestMain(m *testing.M) {
-    err := godotenv.Load()
+    godotenv.Load()
     /*
     if err != nil {
         panic(err)
