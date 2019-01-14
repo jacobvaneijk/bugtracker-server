@@ -12,6 +12,5 @@ outputs:
 - name: bin
 
 run:
-  path: go
-  args: [test]
+  path: ci/build]
   dir: ./bugtracker-server
